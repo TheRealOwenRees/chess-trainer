@@ -18,6 +18,13 @@ defmodule ChessTrainerWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+
+    live "/endgames", EndgameLive.Index, :index
+    live "/endgames/new", EndgameLive.Index, :new
+    live "/endgames/:id/edit", EndgameLive.Index, :edit
+
+    live "/endgames/:id", EndgameLive.Show, :show
+    live "/endgames/:id/show/edit", EndgameLive.Show, :edit
   end
 
   # Other scopes may use custom stacks.

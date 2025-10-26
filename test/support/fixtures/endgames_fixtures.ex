@@ -26,4 +26,22 @@ defmodule ChessTrainer.EndgamesFixtures do
 
     endgame
   end
+
+  @doc """
+  Generate a endgame.
+  """
+  def endgame_fixture(attrs \\ %{}) do
+    {:ok, endgame} =
+      attrs
+      |> Enum.into(%{
+        fen: "some fen",
+        key: "some key",
+        message: "some message",
+        notes: "some notes",
+        result: "some result"
+      })
+      |> ChessTrainer.Endgames.create_endgame()
+
+    endgame
+  end
 end
