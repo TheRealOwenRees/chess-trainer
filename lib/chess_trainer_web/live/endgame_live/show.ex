@@ -20,7 +20,7 @@ defmodule ChessTrainerWeb.EndgameLive.Show do
         </:actions>
       </.header>
 
-      <.live_component module={ChessTrainerWeb.BoardLiveComponent} id="board" />
+      <.live_component module={ChessTrainerWeb.BoardLiveComponent} id="board" fen={@endgame.fen} />
 
       <.list>
         <:item title="Fen">{@endgame.fen}</:item>
