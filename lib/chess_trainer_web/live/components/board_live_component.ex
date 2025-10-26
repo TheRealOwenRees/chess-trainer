@@ -3,11 +3,25 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
 
   import ChessTrainerWeb.PieceComponent
 
+  def update(%{fen: fen}, socket) do
+    game = Chex.Parser.FEN.parse(fen)
+    {:ok, assign(socket, game: game)}
+  end
+
+  def handle_event("square-click", %{"file" => f, "rank" => r, "type" => "move"}, socket) do
+    file = String.to_existing_atom(f)
+    rank = String.to_integer(r)
+    IO.inspect({file, rank}, label: "Clicked square")
+    {:noreply, socket}
+  end
+
   def render(assigns) do
+    files_list = [:a, :b, :c, :d, :e, :f, :g, :h]
+
     files =
       case assigns.game.active_color do
-        :white -> [:a, :b, :c, :d, :e, :f, :g, :h]
-        :black -> Enum.reverse([:a, :b, :c, :d, :e, :f, :g, :h])
+        :white -> files_list
+        :black -> Enum.reverse(files_list)
       end
 
     ranks =
@@ -23,12 +37,19 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
           <%= for file <- files do %>
             <% square = {file, rank} %>
             <% piece = Map.get(@game.board, square) %>
-            <% file_index = Enum.find_index([:a, :b, :c, :d, :e, :f, :g, :h], fn f -> f == file end) %>
+            <% file_index = Enum.find_index(files_list, fn f -> f == file end) %>
             <% rank_index = rank - 1 %>
-            <div class={[
-              "w-12 h-12 flex items-center justify-center",
-              background(file_index, rank_index)
-            ]}>
+            <div
+              class={[
+                "w-12 h-12 flex items-center justify-center",
+                background(file_index, rank_index)
+              ]}
+              phx-click="square-click"
+              phx-value-file={file}
+              phx-value-rank={rank}
+              phx-value-type="move"
+              phx-target={@myself}
+            >
               <.piece piece={piece} class="w-10 h-10" />
             </div>
           <% end %>
@@ -36,11 +57,6 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
       </div>
     </div>
     """
-  end
-
-  def update(%{fen: fen}, socket) do
-    game = Chex.Parser.FEN.parse(fen)
-    {:ok, assign(socket, game: game)}
   end
 
   defp background(file_index, rank_index) when rem(file_index + rank_index, 2) != 0,
