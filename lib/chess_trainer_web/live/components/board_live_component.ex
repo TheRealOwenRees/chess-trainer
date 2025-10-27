@@ -11,8 +11,22 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
   def handle_event("square-click", %{"file" => f, "rank" => r, "type" => "move"}, socket) do
     file = String.to_existing_atom(f)
     rank = String.to_integer(r)
-    IO.inspect({file, rank}, label: "Clicked square")
+    board = socket.assigns.game.board
+    active_color = socket.assigns.game.active_color
+    IO.inspect(socket)
+    selected_square = is_piece_selected({file, rank}, board, active_color)
+    IO.inspect(selected_square)
     {:noreply, socket}
+  end
+
+  @doc """
+  Check that the selected square contains a piece of the player who's turn it is to move
+  """
+  defp is_piece_selected({file, rank}, board, active_color) do
+    case Map.get(board, {file, rank}) do
+      {_piece, color, {file, rank}} when color == active_color -> {:ok, {file, rank}}
+      _ -> {:error, nil}
+    end
   end
 
   def render(assigns) do
