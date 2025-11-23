@@ -4,7 +4,7 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
   import ChessTrainerWeb.PieceComponent
 
   def update(%{fen: fen}, socket) do
-    game = Chex.Parser.FEN.parse(fen)
+    {:ok, game} = Chex.Parser.FEN.parse(fen)
 
     orientation =
       case socket.assigns[:orientation] do
@@ -16,6 +16,7 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
   end
 
   def handle_event("square-click", %{"file" => f, "rank" => r, "type" => "move"}, socket) do
+    # TODO make whole square and move check into composable functions
     file = String.to_existing_atom(f)
     rank = String.to_integer(r)
     board = socket.assigns.game.board
@@ -28,15 +29,19 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
           # No from-square selected yet — try to select a valid piece
           case is_valid_piece_selected({file, rank}, board, active_color) do
             {:ok, _, _, _} ->
-              assign(socket, move_from_square: square_san)
+              assign(socket, move_from_square: {file, rank})
 
             _ ->
               assign(socket, move_from_square: nil, move_to_square: nil)
           end
 
         from_square ->
+          # TODO use this to check move validity
+          valid_move = valid_move?(socket.assigns.game, from_square, {file, rank})
+          IO.inspect(valid_move, label: "valid move?")
+
           # From-square already selected — this is the destination
-          move_san = from_square <> square_san
+          move_san = "#{elem(from_square, 0)}#{elem(from_square, 1)}" <> square_san
 
           case Chex.Game.move(socket.assigns.game, move_san) do
             {:ok, new_game} ->
@@ -48,8 +53,6 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
               assign(socket, move_from_square: nil, move_to_square: nil)
           end
       end
-
-    IO.inspect(socket)
 
     {:noreply, socket}
   end
@@ -117,6 +120,7 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
     """
   end
 
+  # TODO not boolean return so rename to exclud 'is'
   # Check that the selected square contains a piece of the player who's turn it is to move
   defp is_valid_piece_selected({file, rank}, board, active_color) do
     case Map.get(board, {file, rank}) do
@@ -125,8 +129,11 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
     end
   end
 
-  defp background(file_index, rank_index) when rem(file_index + rank_index, 2) != 0,
-    do: "bg-boardwhite"
+  defp valid_move?(game, move_from_square, move_to_square) do
+    Chex.possible_moves(game, move_from_square)
+    |> Enum.member?(move_to_square)
+  end
 
+  defp background(file_idx, rank_idx) when rem(file_idx + rank_idx, 2) != 0, do: "bg-boardwhite"
   defp background(_, _), do: "bg-boardblack"
 end
