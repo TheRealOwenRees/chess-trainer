@@ -3,16 +3,17 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
 
   import ChessTrainerWeb.PieceComponent
 
+  # TODO abstract Chex away. Create a file such as chess.ex and expose the functions I need - move, game
+
   def update(%{fen: fen}, socket) do
+    # TODO return error if not :ok
     {:ok, game} = Chex.Parser.FEN.parse(fen)
 
-    orientation =
-      case socket.assigns[:orientation] do
-        nil -> game.active_color
-        existing -> existing
-      end
-
-    {:ok, assign(socket, game: game, orientation: orientation)}
+    {:ok,
+     assign(socket,
+       game: game,
+       orientation: board_orientation(game, socket.assigns[:orientation])
+     )}
   end
 
   def handle_event("square-click", %{"file" => f, "rank" => r, "type" => "move"}, socket) do
@@ -120,8 +121,10 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
     """
   end
 
-  # TODO not boolean return so rename to exclud 'is'
-  # Check that the selected square contains a piece of the player who's turn it is to move
+  # TODO write spec - orientation is either nil or :white or :black, game is ??
+  defp board_orientation(game, orientation) when is_nil(orientation), do: game.active_color
+  defp board_orientation(_game, orientation), do: orientation
+
   defp is_valid_piece_selected({file, rank}, board, active_color) do
     case Map.get(board, {file, rank}) do
       {piece, color, {file, rank}} when color == active_color -> {:ok, piece, color, {file, rank}}
