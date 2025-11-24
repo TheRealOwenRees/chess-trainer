@@ -3,6 +3,7 @@ defmodule ChessTrainerWeb.Chess.Game do
   Game related functions
   """
 
+  @type square :: {atom(), integer()} | nil
   @type orientation :: :white | :black | nil
 
   @type t :: %__MODULE__{
@@ -17,7 +18,9 @@ defmodule ChessTrainerWeb.Chess.Game do
           check: term() | nil,
           result: term() | nil,
           pgn: String.t() | nil,
-          orientation: orientation
+          orientation: orientation,
+          move_from_square: square,
+          move_to_square: square
         }
 
   defstruct board: %{},
@@ -31,7 +34,9 @@ defmodule ChessTrainerWeb.Chess.Game do
             check: nil,
             result: nil,
             pgn: nil,
-            orientation: nil
+            orientation: nil,
+            move_from_square: nil,
+            move_to_square: nil
 
   @doc """
   Return a game struct from a valid FEN string
@@ -71,6 +76,8 @@ defmodule ChessTrainerWeb.Chess.Game do
       game
       |> Map.from_struct()
       |> Map.delete(:orientation)
+      |> Map.delete(:move_from_square)
+      |> Map.delete(:move_to_square)
       |> then(&struct(Chex.Game, &1))
 
     case Chex.Game.move(chex_game, move_san) do
@@ -96,6 +103,36 @@ defmodule ChessTrainerWeb.Chess.Game do
   end
 
   @doc """
+  Update game state with piece movement from and to a square, via handle_event
+  """
+  @spec move_piece_from_to_square(t(), String.t(), String.t()) :: t()
+  def move_piece_from_to_square(game, file, rank) do
+    file_atom = String.to_existing_atom(file)
+    rank_integer = String.to_integer(rank)
+    square_san = file <> rank
+
+    case game.move_from_square do
+      nil ->
+        case is_valid_piece_selected({file_atom, rank_integer}, game.board, game.active_color) do
+          {:ok, _, _, _} ->
+            %{game | move_from_square: {file_atom, rank_integer}}
+
+          _ ->
+            %{game | move_from_square: nil, move_to_square: nil}
+        end
+
+      move_from_square ->
+        move_san =
+          "#{elem(move_from_square, 0)}#{elem(move_from_square, 1)}" <> square_san
+
+        case move(game, move_san) do
+          {:ok, new_game} -> %{new_game | move_from_square: nil, move_to_square: nil}
+          {:error, _reason} -> %{game | move_from_square: nil, move_to_square: nil}
+        end
+    end
+  end
+
+  @doc """
   Reverse the board orientation. Used for flipping the board.
   """
   @spec flip_orientation(t()) :: t()
@@ -106,4 +143,11 @@ defmodule ChessTrainerWeb.Chess.Game do
   @spec board_orientation(t(), orientation()) :: orientation
   defp board_orientation(game, orientation) when is_nil(orientation), do: game.active_color
   defp board_orientation(_game, orientation), do: orientation
+
+  defp is_valid_piece_selected({file, rank}, board, active_color) do
+    case Map.get(board, {file, rank}) do
+      {piece, color, {file, rank}} when color == active_color -> {:ok, piece, color, {file, rank}}
+      _ -> {:error, nil}
+    end
+  end
 end
