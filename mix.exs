@@ -66,8 +66,9 @@ defmodule ChessTrainer.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.5"},
-      {:chex, git: "https://github.com/therealowenrees/chex.git", tag: "v0.2.0-alpha.1"},
-      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false}
+      {:chex, git: "https://github.com/therealowenrees/chex.git", tag: "v0.2.0-alpha.2"},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
     ]
   end
 
