@@ -1,4 +1,7 @@
 defmodule ChessTrainerWeb.PieceComponent do
+  @moduledoc """
+  Chess pieces component
+  """
   use Phoenix.Component
 
   attr :piece, :any, required: true

@@ -1,4 +1,8 @@
 defmodule ChessTrainerWeb.BoardLiveComponent do
+  @moduledoc """
+  Chess board LiveView component
+  """
+
   use Phoenix.LiveComponent
 
   import ChessTrainerWeb.PieceComponent

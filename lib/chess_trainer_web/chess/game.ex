@@ -78,7 +78,7 @@ defmodule ChessTrainerWeb.Chess.Game do
 
     case game.move_from_square do
       nil ->
-        case is_valid_piece_selected({file_atom, rank_integer}, game.board, game.active_color) do
+        case check_valid_piece_selected({file_atom, rank_integer}, game.board, game.active_color) do
           {:ok, _, _, _} ->
             %{game | move_from_square: {file_atom, rank_integer}}
 
@@ -144,7 +144,7 @@ defmodule ChessTrainerWeb.Chess.Game do
   defp board_orientation(game, orientation) when is_nil(orientation), do: game.active_color
   defp board_orientation(_game, orientation), do: orientation
 
-  defp is_valid_piece_selected({file, rank}, board, active_color) do
+  defp check_valid_piece_selected({file, rank}, board, active_color) do
     case Map.get(board, {file, rank}) do
       {piece, color, {file, rank}} when color == active_color -> {:ok, piece, color, {file, rank}}
       _ -> {:error, nil}

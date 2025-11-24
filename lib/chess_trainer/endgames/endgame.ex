@@ -1,4 +1,7 @@
 defmodule ChessTrainer.Endgames.Endgame do
+  @moduledoc """
+  Singular endgame
+  """
   use Ecto.Schema
   import Ecto.Changeset
 
