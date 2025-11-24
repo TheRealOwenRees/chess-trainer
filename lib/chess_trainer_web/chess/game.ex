@@ -68,10 +68,38 @@ defmodule ChessTrainerWeb.Chess.Game do
   end
 
   @doc """
-  Register a move in the game using SAN notation.
+  Update game state with piece movement from and to a square, via handle_event
   """
+  @spec move_piece_from_to_square(t(), String.t(), String.t()) :: t()
+  def move_piece_from_to_square(game, file, rank) do
+    file_atom = String.to_existing_atom(file)
+    rank_integer = String.to_integer(rank)
+    square_san = file <> rank
+
+    case game.move_from_square do
+      nil ->
+        case is_valid_piece_selected({file_atom, rank_integer}, game.board, game.active_color) do
+          {:ok, _, _, _} ->
+            %{game | move_from_square: {file_atom, rank_integer}}
+
+          _ ->
+            %{game | move_from_square: nil, move_to_square: nil}
+        end
+
+      move_from_square ->
+        move_san =
+          "#{elem(move_from_square, 0)}#{elem(move_from_square, 1)}" <> square_san
+
+        case move(game, move_san) do
+          {:ok, new_game} -> %{new_game | move_from_square: nil, move_to_square: nil}
+          {:error, _reason} -> %{game | move_from_square: nil, move_to_square: nil}
+        end
+    end
+  end
+
+  # Abstraction of Chex.Game.move/ to match our game struct
   @spec move(t(), String.t()) :: {:ok, t() | {:error, atom()}}
-  def move(game, move_san) do
+  defp move(game, move_san) do
     chex_game =
       game
       |> Map.from_struct()
@@ -101,36 +129,6 @@ defmodule ChessTrainerWeb.Chess.Game do
 
       {_error, reason} ->
         {:error, reason}
-    end
-  end
-
-  @doc """
-  Update game state with piece movement from and to a square, via handle_event
-  """
-  @spec move_piece_from_to_square(t(), String.t(), String.t()) :: t()
-  def move_piece_from_to_square(game, file, rank) do
-    file_atom = String.to_existing_atom(file)
-    rank_integer = String.to_integer(rank)
-    square_san = file <> rank
-
-    case game.move_from_square do
-      nil ->
-        case is_valid_piece_selected({file_atom, rank_integer}, game.board, game.active_color) do
-          {:ok, _, _, _} ->
-            %{game | move_from_square: {file_atom, rank_integer}}
-
-          _ ->
-            %{game | move_from_square: nil, move_to_square: nil}
-        end
-
-      move_from_square ->
-        move_san =
-          "#{elem(move_from_square, 0)}#{elem(move_from_square, 1)}" <> square_san
-
-        case move(game, move_san) do
-          {:ok, new_game} -> %{new_game | move_from_square: nil, move_to_square: nil}
-          {:error, _reason} -> %{game | move_from_square: nil, move_to_square: nil}
-        end
     end
   end
 

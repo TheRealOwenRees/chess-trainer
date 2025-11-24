@@ -82,53 +82,10 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
   end
 
   def handle_event("square-click", %{"file" => file, "rank" => rank, "type" => "move"}, socket) do
-    game = Game.move_piece_from_to_square(socket.assigns.game, file, rank)
-
-    IO.inspect(game)
-
-    {:noreply, assign(socket, game: game)}
+    {:noreply,
+     assign(socket, game: Game.move_piece_from_to_square(socket.assigns.game, file, rank))}
   end
 
   defp background(file_idx, rank_idx) when rem(file_idx + rank_idx, 2) != 0, do: "bg-boardwhite"
   defp background(_, _), do: "bg-boardblack"
 end
-
-# defmodule ChessTrainerWeb.BoardLiveComponent do
-#   def handle_event("square-click", %{"file" => f, "rank" => r, "type" => "move"}, socket) do
-#     # TODO make whole square and move check into composable functions
-#     file = String.to_existing_atom(f)
-#     rank = String.to_integer(r)
-#     board = socket.assigns.game.board
-#     active_color = socket.assigns.game.active_color
-#     square_san = f <> r
-
-#     socket =
-#       case socket.assigns[:move_from_square] do
-#         nil ->
-#           # No from-square selected yet — try to select a valid piece
-#           case is_valid_piece_selected({file, rank}, board, active_color) do
-#             {:ok, _, _, _} ->
-#               assign(socket, move_from_square: {file, rank})
-
-#             _ ->
-#               assign(socket, move_from_square: nil, move_to_square: nil)
-#           end
-
-#         from_square ->
-#           # From-square already selected — this is the destination
-#           move_san = "#{elem(from_square, 0)}#{elem(from_square, 1)}" <> square_san
-
-#           case Chex.Game.move(socket.assigns.game, move_san) do
-#             {:ok, new_game} ->
-#               socket
-#               |> assign(game: new_game)
-#               |> assign(move_from_square: nil, move_to_square: nil)
-
-#             {:error, _reason} ->
-#               assign(socket, move_from_square: nil, move_to_square: nil)
-#           end
-#       end
-
-#     {:noreply, socket}
-#   end
-# end
