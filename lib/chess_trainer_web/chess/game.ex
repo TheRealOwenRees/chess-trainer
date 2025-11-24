@@ -82,7 +82,7 @@ defmodule ChessTrainerWeb.Chess.Game do
 
     case Chex.Game.move(chex_game, move_san) do
       {:ok, %Chex.Game{} = chex_game} ->
-        %__MODULE__{
+        new_game = %__MODULE__{
           board: chex_game.board,
           active_color: chex_game.active_color,
           castling: chex_game.castling,
@@ -96,6 +96,8 @@ defmodule ChessTrainerWeb.Chess.Game do
           pgn: chex_game.pgn,
           orientation: game.orientation
         }
+
+        {:ok, new_game}
 
       {_error, reason} ->
         {:error, reason}
