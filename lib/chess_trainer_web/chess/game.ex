@@ -94,7 +94,7 @@ defmodule ChessTrainerWeb.Chess.Game do
     end
   end
 
-  # Abstraction of Chex.Game.move/ to match our game struct
+  # Abstraction of Chex.Game.move/2 to match our game struct
   @spec move(t(), move) :: {:ok, t()} | {:error, atom()}
   defp move(game, {from, to}) do
     chex_game =

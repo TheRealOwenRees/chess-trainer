@@ -2,11 +2,8 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
   @moduledoc """
   Chess board LiveView component
   """
-
   use Phoenix.LiveComponent
-
   import ChessTrainerWeb.PieceComponent
-
   alias ChessTrainerWeb.Chess.Game
 
   def render(assigns) do
@@ -42,6 +39,7 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
               rank={rank}
               piece={piece}
               files_list={@files_list}
+              move_from_square={@game.move_from_square}
               myself={@myself}
             />
           <% end %>
@@ -55,9 +53,16 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
   attr :rank, :integer, required: true
   attr :piece, :any, default: nil
   attr :files_list, :list, required: true
+  attr :move_from_square, :any, default: nil
   attr :myself, :any, required: true
 
   def square(assigns) do
+    current_square = {assigns.file, assigns.rank}
+
+    assigns =
+      assigns
+      |> assign(:highlight_square, current_square === assigns.move_from_square)
+
     ~H"""
     <div
       class={[
@@ -65,7 +70,8 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
         background(
           Enum.find_index(assigns.files_list, fn f -> f == assigns.file end),
           assigns.rank - 1
-        )
+        ),
+        highlight_square(assigns.highlight_square)
       ]}
       phx-click="square-click"
       phx-value-file={@file}
@@ -98,4 +104,7 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
 
   defp background(file_idx, rank_idx) when rem(file_idx + rank_idx, 2) != 0, do: "bg-boardwhite"
   defp background(_, _), do: "bg-boardblack"
+
+  defp highlight_square(true), do: "ring-inset ring-2 ring-yellow-400"
+  defp highlight_square(false), do: ""
 end
