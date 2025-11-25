@@ -80,8 +80,14 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
 
   def update(%{fen: fen}, socket) do
     case Game.game_from_fen(fen) do
-      {:ok, game} -> {:ok, assign(socket, game: game)}
-      {:error, reason} -> {:error, socket} |> put_flash(socket, reason)
+      {:ok, game} ->
+        {:ok, assign(socket, game: game)}
+
+      {:error, reason} ->
+        {:ok,
+         socket
+         |> assign(:game, nil)
+         |> put_flash(:error, reason)}
     end
   end
 

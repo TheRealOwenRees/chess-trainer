@@ -3,7 +3,8 @@ defmodule ChessTrainerWeb.Chess.Game do
   Game related functions
   """
 
-  @type square :: {atom(), integer()} | nil
+  @type square :: {atom(), pos_integer()} | nil
+  @type move :: {square, square}
   @type orientation :: :white | :black | nil
 
   @type t :: %__MODULE__{
@@ -43,38 +44,37 @@ defmodule ChessTrainerWeb.Chess.Game do
   """
   @spec game_from_fen(String.t()) :: {:ok, t()} | {:error, atom()}
   def game_from_fen(fen) do
-    case Chex.Parser.FEN.parse(fen) do
-      {:ok, %Chex.Game{} = chex_game} ->
-        game = %__MODULE__{
-          board: chex_game.board,
-          active_color: chex_game.active_color,
-          castling: chex_game.castling,
-          en_passant: chex_game.en_passant,
-          moves: chex_game.moves,
-          halfmove_clock: chex_game.halfmove_clock,
-          fullmove_clock: chex_game.fullmove_clock,
-          captures: chex_game.captures,
-          check: chex_game.check,
-          result: chex_game.result,
-          pgn: chex_game.pgn,
-          orientation: nil
-        }
+    try do
+      {:ok, %Chex.Game{} = chex_game} = Chex.Parser.FEN.parse(fen)
 
-        {:ok, %{game | orientation: board_orientation(game, game.orientation)}}
+      game = %__MODULE__{
+        board: chex_game.board,
+        active_color: chex_game.active_color,
+        castling: chex_game.castling,
+        en_passant: chex_game.en_passant,
+        moves: chex_game.moves,
+        halfmove_clock: chex_game.halfmove_clock,
+        fullmove_clock: chex_game.fullmove_clock,
+        captures: chex_game.captures,
+        check: chex_game.check,
+        result: chex_game.result,
+        pgn: chex_game.pgn,
+        orientation: nil
+      }
 
-      {_error, reason} ->
-        {:error, reason}
+      {:ok, %{game | orientation: board_orientation(game, game.orientation)}}
+    rescue
+      MatchError -> {:error, :invalid_fen}
     end
   end
 
   @doc """
-  Update game state with piece movement from and to a square, via handle_event
+  Update game state with piece movement from and to a square, via handle_event.
   """
   @spec move_piece_from_to_square(t(), String.t(), String.t()) :: t()
   def move_piece_from_to_square(game, file, rank) do
     file_atom = String.to_existing_atom(file)
     rank_integer = String.to_integer(rank)
-    square_san = file <> rank
 
     case game.move_from_square do
       nil ->
@@ -86,11 +86,8 @@ defmodule ChessTrainerWeb.Chess.Game do
             %{game | move_from_square: nil, move_to_square: nil}
         end
 
-      move_from_square ->
-        move_san =
-          "#{elem(move_from_square, 0)}#{elem(move_from_square, 1)}" <> square_san
-
-        case move(game, move_san) do
+      _ ->
+        case move(game, {game.move_from_square, {file_atom, rank_integer}}) do
           {:ok, new_game} -> %{new_game | move_from_square: nil, move_to_square: nil}
           {:error, _reason} -> %{game | move_from_square: nil, move_to_square: nil}
         end
@@ -98,8 +95,8 @@ defmodule ChessTrainerWeb.Chess.Game do
   end
 
   # Abstraction of Chex.Game.move/ to match our game struct
-  @spec move(t(), String.t()) :: {:ok, t() | {:error, atom()}}
-  defp move(game, move_san) do
+  @spec move(t(), move) :: {:ok, t()} | {:error, atom()}
+  defp move(game, {from, to}) do
     chex_game =
       game
       |> Map.from_struct()
@@ -108,7 +105,7 @@ defmodule ChessTrainerWeb.Chess.Game do
       |> Map.delete(:move_to_square)
       |> then(&struct(Chex.Game, &1))
 
-    case Chex.Game.move(chex_game, move_san) do
+    case Chex.Game.move(chex_game, {from, to}) do
       {:ok, %Chex.Game{} = chex_game} ->
         new_game = %__MODULE__{
           board: chex_game.board,
@@ -122,7 +119,9 @@ defmodule ChessTrainerWeb.Chess.Game do
           check: chex_game.check,
           result: chex_game.result,
           pgn: chex_game.pgn,
-          orientation: game.orientation
+          orientation: game.orientation,
+          move_from_square: nil,
+          move_to_square: nil
         }
 
         {:ok, new_game}
