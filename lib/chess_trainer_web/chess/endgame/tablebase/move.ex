@@ -3,7 +3,7 @@ defmodule ChessTrainerWeb.Chess.Endgame.Tablebase.Move do
   Moves associated with the tablebase
   """
 
-  @type result :: ChessTrainerWeb.Chess.Endgame.Tablebase.result()
+  @type result :: :win | :draw | :loss
 
   @type t :: %__MODULE__{
           category: result,
