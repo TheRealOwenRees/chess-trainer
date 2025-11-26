@@ -7,6 +7,7 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
   alias ChessTrainerWeb.Chess.Game
 
   def render(assigns) do
+    IO.inspect(assigns)
     files_list = [:a, :b, :c, :d, :e, :f, :g, :h]
 
     assigns =
@@ -84,15 +85,16 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
     """
   end
 
-  def update(%{fen: fen}, socket) do
+  def update(%{fen: fen, game_type: game_type}, socket) do
     case Game.game_from_fen(fen) do
       {:ok, game} ->
-        {:ok, assign(socket, game: game)}
+        {:ok, assign(socket, game: game, game_type: game_type)}
 
       {:error, reason} ->
         {:ok,
          socket
          |> assign(:game, nil)
+         |> assign(game_type: game_type)
          |> put_flash(:error, reason)}
     end
   end

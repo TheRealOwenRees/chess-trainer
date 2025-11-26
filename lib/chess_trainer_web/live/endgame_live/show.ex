@@ -20,7 +20,12 @@ defmodule ChessTrainerWeb.EndgameLive.Show do
         </:actions>
       </.header>
 
-      <.live_component module={ChessTrainerWeb.BoardLiveComponent} id="board" fen={@endgame.fen} />
+      <.live_component
+        module={ChessTrainerWeb.BoardLiveComponent}
+        id="board"
+        fen={@endgame.fen}
+        game_type={@game_type}
+      />
 
       <.list>
         <:item title="Fen">{@endgame.fen}</:item>
@@ -38,6 +43,7 @@ defmodule ChessTrainerWeb.EndgameLive.Show do
     {:ok,
      socket
      |> assign(:page_title, "Show Endgame")
-     |> assign(:endgame, Endgames.get_endgame!(id))}
+     |> assign(:endgame, Endgames.get_endgame!(id))
+     |> assign(:game_type, :endgame)}
   end
 end

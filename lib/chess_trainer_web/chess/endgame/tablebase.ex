@@ -3,6 +3,7 @@ defmodule ChessTrainerWeb.Chess.Endgame.Tablebase do
   All endgame tablebase related functions.
   """
   alias ChessTrainerWeb.Chess.Endgame.Tablebase.Move
+  alias ChessTrainer.Ratelimiter
 
   @lichess_tablebase_url "http://tablebase.lichess.ovh/standard?fen="
 
@@ -35,6 +36,13 @@ defmodule ChessTrainerWeb.Chess.Endgame.Tablebase do
   FEN must have spaces replaced by underscores to satisfy the Lichess API.
   """
   def tablebase_from_fen(fen) do
+    case Ratelimiter.Lichess.check_cooldown() do
+      {:cooldown, remaining_ms} -> {:cooldown, remaining_ms}
+      {:ok, _} -> tablebase_response(fen)
+    end
+  end
+
+  defp tablebase_response(fen) do
     response =
       fen
       |> sanitise_fen()
@@ -48,7 +56,7 @@ defmodule ChessTrainerWeb.Chess.Endgame.Tablebase do
     end
   end
 
-  def from_map(map) do
+  defp from_map(map) do
     %__MODULE__{
       category: map["category"] |> String.to_existing_atom(),
       checkmate: map["checkmate"],
