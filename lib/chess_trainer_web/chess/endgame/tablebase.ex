@@ -76,38 +76,17 @@ defmodule ChessTrainerWeb.Chess.Endgame.Tablebase do
         {:ok, body}
 
       # Client errors
-      {:ok, %Req.Response{status: 400, body: body}} ->
-        {:error, {:bad_request, body}}
-
-      {:ok, %Req.Response{status: 401, body: body}} ->
-        {:error, {:unauthorized, body}}
-
-      {:ok, %Req.Response{status: 403, body: body}} ->
-        {:error, {:forbidden, body}}
-
-      {:ok, %Req.Response{status: 404, body: body}} ->
-        {:error, {:not_found, body}}
-
-      {:ok, %Req.Response{status: 422, body: body}} ->
-        {:error, {:unprocessable_entity, body}}
+      {:ok, %Req.Response{status: status, body: body}} when status in 400..499 ->
+        {:error, {:client_error, status, body}}
 
       # Rate limiting
       {:ok, %Req.Response{status: 429, body: body}} ->
-        # TODO if this response code is returned, add entry to ETS with timestamp 1 minute from now
-        {:error, {:too_many_requests, body}}
+        Ratelimiter.Lichess.add_cooldown()
+        {:error, {:too_many_requests, 429, body}}
 
       # Server errors
-      {:ok, %Req.Response{status: 500, body: body}} ->
-        {:error, {:internal_server_error, body}}
-
-      {:ok, %Req.Response{status: 502, body: body}} ->
-        {:error, {:bad_gateway, body}}
-
-      {:ok, %Req.Response{status: 503, body: body}} ->
-        {:error, {:service_unavailable, body}}
-
-      {:ok, %Req.Response{status: 504, body: body}} ->
-        {:error, {:gateway_timeout, body}}
+      {:ok, %Req.Response{status: status, body: body}} when status in 500..599 ->
+        {:error, {:server_error, status, body}}
 
       # Catch‑all for other status codes
       {:ok, %Req.Response{status: status, body: body}} ->

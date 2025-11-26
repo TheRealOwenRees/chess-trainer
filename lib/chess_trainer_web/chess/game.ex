@@ -87,6 +87,7 @@ defmodule ChessTrainerWeb.Chess.Game do
         end
 
       _ ->
+        # TODO check tablebase, if ok move then use below code, if loss return loss
         case move(game, {game.move_from_square, {file_atom, rank_integer}}) do
           {:ok, new_game} -> %{new_game | move_from_square: nil, move_to_square: nil}
           {:error, _reason} -> %{game | move_from_square: nil, move_to_square: nil}

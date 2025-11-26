@@ -1,4 +1,4 @@
-defmodule ChessTrainerWeb.SquareLiveComponent do
+defmodule ChessTrainerWeb.SquareComponent do
   @moduledoc """
   Renders a single chess square with optional piece and highlighting.
   """

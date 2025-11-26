@@ -3,7 +3,7 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
   Chess board LiveView component
   """
   use Phoenix.LiveComponent
-  import ChessTrainerWeb.SquareLiveComponent
+  import ChessTrainerWeb.SquareComponent
   alias ChessTrainerWeb.Chess.Game
 
   def render(assigns) do
@@ -49,16 +49,15 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
     """
   end
 
-  def update(%{fen: fen, game_type: game_type}, socket) do
+  def update(%{fen: fen}, socket) do
     case Game.game_from_fen(fen) do
       {:ok, game} ->
-        {:ok, assign(socket, game: game, game_type: game_type)}
+        {:ok, assign(socket, game: game)}
 
       {:error, reason} ->
         {:ok,
          socket
          |> assign(:game, nil)
-         |> assign(game_type: game_type)
          |> put_flash(:error, reason)}
     end
   end
