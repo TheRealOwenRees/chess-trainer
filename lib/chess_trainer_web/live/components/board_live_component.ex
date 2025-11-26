@@ -3,11 +3,10 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
   Chess board LiveView component
   """
   use Phoenix.LiveComponent
-  import ChessTrainerWeb.PieceComponent
+  import ChessTrainerWeb.SquareLiveComponent
   alias ChessTrainerWeb.Chess.Game
 
   def render(assigns) do
-    IO.inspect(assigns)
     files_list = [:a, :b, :c, :d, :e, :f, :g, :h]
 
     assigns =
@@ -50,41 +49,6 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
     """
   end
 
-  attr :file, :atom, required: true
-  attr :rank, :integer, required: true
-  attr :piece, :any, default: nil
-  attr :files_list, :list, required: true
-  attr :move_from_square, :any, default: nil
-  attr :myself, :any, required: true
-
-  def square(assigns) do
-    current_square = {assigns.file, assigns.rank}
-
-    assigns =
-      assigns
-      |> assign(:highlight_square, current_square === assigns.move_from_square)
-
-    ~H"""
-    <div
-      class={[
-        "w-12 h-12 flex items-center justify-center",
-        background(
-          Enum.find_index(assigns.files_list, fn f -> f == assigns.file end),
-          assigns.rank - 1
-        ),
-        highlight_square(assigns.highlight_square)
-      ]}
-      phx-click="square-click"
-      phx-value-file={@file}
-      phx-value-rank={@rank}
-      phx-value-type="move"
-      phx-target={@myself}
-    >
-      <.piece piece={@piece} class="w-10 h-10" />
-    </div>
-    """
-  end
-
   def update(%{fen: fen, game_type: game_type}, socket) do
     case Game.game_from_fen(fen) do
       {:ok, game} ->
@@ -103,10 +67,4 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
     {:noreply,
      assign(socket, game: Game.move_piece_from_to_square(socket.assigns.game, file, rank))}
   end
-
-  defp background(file_idx, rank_idx) when rem(file_idx + rank_idx, 2) != 0, do: "bg-boardwhite"
-  defp background(_, _), do: "bg-boardblack"
-
-  defp highlight_square(true), do: "ring-inset ring-2 ring-yellow-400"
-  defp highlight_square(false), do: ""
 end
