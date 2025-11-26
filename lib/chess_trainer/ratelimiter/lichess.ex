@@ -7,6 +7,7 @@ defmodule ChessTrainer.Ratelimiter.Lichess do
 
   def create do
     :ets.new(:lichess_cooldown, [:named_table, :public, :set])
+    :ets.insert(:lichess_cooldown, {:until, nil})
   end
 
   def add_cooldown do
@@ -14,7 +15,8 @@ defmodule ChessTrainer.Ratelimiter.Lichess do
       insert_cooldown()
     rescue
       ArgumentError ->
-        create_and_insert_cooldown()
+        create()
+        insert_cooldown()
     end
   end
 
@@ -25,9 +27,6 @@ defmodule ChessTrainer.Ratelimiter.Lichess do
 
     try do
       case :ets.lookup(:lichess_cooldown, :until) do
-        [] ->
-          insert_cooldown()
-
         [{:until, nil}] ->
           {:ok, 0}
 
@@ -40,7 +39,9 @@ defmodule ChessTrainer.Ratelimiter.Lichess do
           end
       end
     rescue
-      ArgumentError -> create_and_insert_cooldown()
+      ArgumentError ->
+        create()
+        check_cooldown()
     end
   end
 
@@ -51,10 +52,5 @@ defmodule ChessTrainer.Ratelimiter.Lichess do
        System.system_time(:millisecond)
        |> then(&(&1 + @cooldown_seconds * 1000))}
     )
-  end
-
-  defp create_and_insert_cooldown do
-    create()
-    insert_cooldown()
   end
 end
