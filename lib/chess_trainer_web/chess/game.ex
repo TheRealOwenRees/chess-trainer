@@ -2,6 +2,7 @@ defmodule ChessTrainerWeb.Chess.Game do
   @moduledoc """
   Game related functions
   """
+  alias ChessTrainerWeb.Chess.Endgame
 
   @type game_type :: :endgame
   @type square :: {atom(), pos_integer()} | nil
@@ -23,7 +24,9 @@ defmodule ChessTrainerWeb.Chess.Game do
           orientation: orientation,
           move_from_square: square,
           move_to_square: square,
-          game_type: game_type
+          game_type: game_type,
+          fen: String.t(),
+          tablebase: term()
         }
 
   defstruct board: %{},
@@ -40,7 +43,9 @@ defmodule ChessTrainerWeb.Chess.Game do
             orientation: nil,
             move_from_square: nil,
             move_to_square: nil,
-            game_type: nil
+            game_type: nil,
+            fen: nil,
+            tablebase: nil
 
   @doc """
   Return a game struct from a valid FEN string
@@ -62,11 +67,18 @@ defmodule ChessTrainerWeb.Chess.Game do
         check: chex_game.check,
         result: chex_game.result,
         pgn: chex_game.pgn,
-        orientation: nil
+        orientation: nil,
+        game_type: game_type,
+        fen: fen,
+        tablebase:
+          if game_type === :endgame do
+            Endgame.tablebase_from_fen(fen)
+          else
+            nil
+          end
       }
 
-      {:ok,
-       %{game | orientation: board_orientation(game, game.orientation), game_type: game_type}}
+      {:ok, %{game | orientation: board_orientation(game, game.orientation)}}
     rescue
       MatchError -> {:error, :invalid_fen}
     end
@@ -91,6 +103,19 @@ defmodule ChessTrainerWeb.Chess.Game do
         end
 
       _ ->
+        # case game.game_type do
+        #   :endgame ->
+        #     Endgame.check_move_against_tablebase(
+        #       move_to_uci(game.move_from_square, {file_atom, rank_integer}),
+        #       game.fen
+        #     )
+
+        #   _ ->
+        #     %{game | move_from_square: nil, move_to_square: nil}
+        # end
+
+        # TODO load tablebase on position load
+        # TODO check move against move list
         # TODO IF ENDGAME check tablebase, if ok move then use below code, if loss return loss
         case move(game, {game.move_from_square, {file_atom, rank_integer}}) do
           {:ok, new_game} -> %{new_game | move_from_square: nil, move_to_square: nil}
@@ -109,10 +134,13 @@ defmodule ChessTrainerWeb.Chess.Game do
       |> Map.delete(:move_from_square)
       |> Map.delete(:move_to_square)
       |> Map.delete(:game_type)
+      |> Map.delete(:fen)
       |> then(&struct(Chex.Game, &1))
 
     case Chex.Game.move(chex_game, {from, to}) do
       {:ok, %Chex.Game{} = chex_game} ->
+        fen = Chex.Parser.FEN.serialize_board(chex_game.board)
+
         new_game = %__MODULE__{
           board: chex_game.board,
           active_color: chex_game.active_color,
@@ -128,7 +156,14 @@ defmodule ChessTrainerWeb.Chess.Game do
           orientation: game.orientation,
           move_from_square: nil,
           move_to_square: nil,
-          game_type: game.game_type
+          game_type: game.game_type,
+          fen: fen,
+          tablebase:
+            if game.game_type === :endgame do
+              Endgame.tablebase_from_fen(fen)
+            else
+              nil
+            end
         }
 
         {:ok, new_game}
@@ -155,5 +190,12 @@ defmodule ChessTrainerWeb.Chess.Game do
       {piece, color, {file, rank}} when color == active_color -> {:ok, piece, color, {file, rank}}
       _ -> {:error, nil}
     end
+  end
+
+  @spec move_to_uci(square, square) :: String.t()
+  defp move_to_uci(from, to) do
+    from = "#{elem(from, 0)}#{elem(from, 1)}"
+    to = "#{elem(to, 0)}#{elem(to, 1)}"
+    from <> to
   end
 end

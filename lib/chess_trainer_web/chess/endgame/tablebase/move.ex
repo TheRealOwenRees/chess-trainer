@@ -41,7 +41,7 @@ defmodule ChessTrainerWeb.Chess.Endgame.Tablebase.Move do
 
   def from_map(map) do
     %__MODULE__{
-      category: map["category"] |> String.to_existing_atom(),
+      category: map["category"] |> String.to_atom(),
       checkmate: map["checkmate"],
       conversion: map["conversion"],
       dtc: map["dtc"],
