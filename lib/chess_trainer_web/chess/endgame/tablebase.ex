@@ -85,6 +85,7 @@ defmodule ChessTrainerWeb.Chess.Endgame.Tablebase do
 
       # Rate limiting
       {:ok, %Req.Response{status: 429, body: body}} ->
+        # TODO if this response code is returned, add entry to ETS with timestamp 1 minute from now
         {:error, {:too_many_requests, body}}
 
       # Server errors
