@@ -42,6 +42,7 @@ defmodule ChessTrainerWeb.Chess.Endgame.Tablebase do
     end
   end
 
+  # todo check cache/ets first then check lichess api
   defp tablebase_response(fen) do
     response =
       fen

@@ -103,16 +103,16 @@ defmodule ChessTrainerWeb.Chess.Game do
         end
 
       _ ->
-        # case game.game_type do
-        #   :endgame ->
-        #     Endgame.check_move_against_tablebase(
-        #       move_to_uci(game.move_from_square, {file_atom, rank_integer}),
-        #       game.fen
-        #     )
+        case game.game_type do
+          :endgame ->
+            Endgame.check_move_against_tablebase(
+              game.tablebase,
+              move_to_uci(game.move_from_square, {file_atom, rank_integer})
+            )
 
-        #   _ ->
-        #     %{game | move_from_square: nil, move_to_square: nil}
-        # end
+          _ ->
+            %{game | move_from_square: nil, move_to_square: nil}
+        end
 
         # TODO load tablebase on position load
         # TODO check move against move list
