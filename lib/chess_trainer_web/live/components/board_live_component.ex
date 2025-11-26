@@ -49,8 +49,8 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
     """
   end
 
-  def update(%{fen: fen}, socket) do
-    case Game.game_from_fen(fen) do
+  def update(%{fen: fen, game_type: game_type}, socket) do
+    case Game.game_from_fen(fen, game_type) do
       {:ok, game} ->
         {:ok, assign(socket, game: game)}
 

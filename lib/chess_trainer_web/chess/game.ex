@@ -3,6 +3,7 @@ defmodule ChessTrainerWeb.Chess.Game do
   Game related functions
   """
 
+  @type game_type :: :endgame
   @type square :: {atom(), pos_integer()} | nil
   @type move :: {square, square}
   @type orientation :: :white | :black | nil
@@ -21,7 +22,8 @@ defmodule ChessTrainerWeb.Chess.Game do
           pgn: String.t() | nil,
           orientation: orientation,
           move_from_square: square,
-          move_to_square: square
+          move_to_square: square,
+          game_type: game_type
         }
 
   defstruct board: %{},
@@ -37,13 +39,14 @@ defmodule ChessTrainerWeb.Chess.Game do
             pgn: nil,
             orientation: nil,
             move_from_square: nil,
-            move_to_square: nil
+            move_to_square: nil,
+            game_type: nil
 
   @doc """
   Return a game struct from a valid FEN string
   """
-  @spec game_from_fen(String.t()) :: {:ok, t()} | {:error, atom()}
-  def game_from_fen(fen) do
+  @spec game_from_fen(String.t(), game_type()) :: {:ok, t()} | {:error, atom()}
+  def game_from_fen(fen, game_type) do
     try do
       {:ok, %Chex.Game{} = chex_game} = Chex.Parser.FEN.parse(fen)
 
@@ -62,7 +65,8 @@ defmodule ChessTrainerWeb.Chess.Game do
         orientation: nil
       }
 
-      {:ok, %{game | orientation: board_orientation(game, game.orientation)}}
+      {:ok,
+       %{game | orientation: board_orientation(game, game.orientation), game_type: game_type}}
     rescue
       MatchError -> {:error, :invalid_fen}
     end
@@ -87,7 +91,7 @@ defmodule ChessTrainerWeb.Chess.Game do
         end
 
       _ ->
-        # TODO check tablebase, if ok move then use below code, if loss return loss
+        # TODO IF ENDGAME check tablebase, if ok move then use below code, if loss return loss
         case move(game, {game.move_from_square, {file_atom, rank_integer}}) do
           {:ok, new_game} -> %{new_game | move_from_square: nil, move_to_square: nil}
           {:error, _reason} -> %{game | move_from_square: nil, move_to_square: nil}
@@ -104,6 +108,7 @@ defmodule ChessTrainerWeb.Chess.Game do
       |> Map.delete(:orientation)
       |> Map.delete(:move_from_square)
       |> Map.delete(:move_to_square)
+      |> Map.delete(:game_type)
       |> then(&struct(Chex.Game, &1))
 
     case Chex.Game.move(chex_game, {from, to}) do
@@ -122,7 +127,8 @@ defmodule ChessTrainerWeb.Chess.Game do
           pgn: chex_game.pgn,
           orientation: game.orientation,
           move_from_square: nil,
-          move_to_square: nil
+          move_to_square: nil,
+          game_type: game.game_type
         }
 
         {:ok, new_game}
