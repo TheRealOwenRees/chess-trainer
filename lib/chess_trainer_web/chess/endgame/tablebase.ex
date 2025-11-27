@@ -59,7 +59,7 @@ defmodule ChessTrainerWeb.Chess.Endgame.Tablebase do
 
   defp from_map(map) do
     %__MODULE__{
-      category: map["category"] |> String.to_existing_atom(),
+      category: map["category"] |> String.to_atom(),
       checkmate: map["checkmate"],
       dtc: map["dtc"],
       dtm: map["dtm"],

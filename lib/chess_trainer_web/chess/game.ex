@@ -8,6 +8,7 @@ defmodule ChessTrainerWeb.Chess.Game do
   @type square :: {atom(), pos_integer()}
   @type move :: {square, square}
   @type orientation :: :white | :black
+  @type game_state :: :continue | :loss | :draw
 
   @type t :: %__MODULE__{
           player_color: orientation,
@@ -27,7 +28,8 @@ defmodule ChessTrainerWeb.Chess.Game do
           move_to_square: square,
           game_type: game_type,
           fen: String.t(),
-          tablebase: term()
+          tablebase: term(),
+          game_state: game_state
         }
 
   defstruct board: %{},
@@ -47,7 +49,8 @@ defmodule ChessTrainerWeb.Chess.Game do
             move_to_square: nil,
             game_type: nil,
             fen: nil,
-            tablebase: nil
+            tablebase: nil,
+            game_state: :continue
 
   @doc """
   Return a game struct from a valid FEN string
@@ -73,6 +76,7 @@ defmodule ChessTrainerWeb.Chess.Game do
         orientation: nil,
         game_type: game_type,
         fen: fen,
+        game_state: :continue,
         tablebase:
           if game_type === :endgame do
             Endgame.tablebase_from_fen(fen)
@@ -129,6 +133,7 @@ defmodule ChessTrainerWeb.Chess.Game do
       |> Map.delete(:fen)
       |> Map.delete(:player_color)
       |> Map.delete(:tablebase)
+      |> Map.delete(:game_state)
       |> then(&struct(Chex.Game, &1))
 
     case Chex.Game.move(chex_game, {from, to}) do
@@ -136,7 +141,7 @@ defmodule ChessTrainerWeb.Chess.Game do
         fen = Chex.Parser.FEN.serialize_board(chex_game.board)
 
         tablebase =
-          if game.game_type === :endgame do
+          if game.game_type == :endgame do
             Endgame.tablebase_from_fen(fen)
           else
             nil
@@ -160,16 +165,11 @@ defmodule ChessTrainerWeb.Chess.Game do
           move_to_square: nil,
           game_type: game.game_type,
           fen: fen,
-          tablebase: tablebase
+          tablebase: tablebase,
+          game_state: game.game_state
         }
 
-        tablebase_result = Endgame.check_fen_against_tablebase(new_game)
-        IO.inspect(tablebase_result)
-        # the result of tablebase checks could be :lost or :draw
-        # in which case return the new game position but pass :lost / :draw and stop game
-        # we will probably need a :continue in the below tuple
-
-        {:ok, new_game}
+        {:ok, %{new_game | game_state: Endgame.check_fen_against_tablebase(new_game)}}
 
       {_error, reason} ->
         {:error, reason}

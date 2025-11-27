@@ -52,7 +52,13 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
   def update(%{fen: fen, game_type: game_type}, socket) do
     case Game.game_from_fen(fen, game_type) do
       {:ok, game} ->
-        {:ok, assign(socket, game: game)}
+        socket = assign(socket, game: game)
+
+        if game.game_state == :loss do
+          send(self(), {:game_lost})
+        end
+
+        {:ok, socket}
 
       {:error, reason} ->
         {:ok,
@@ -65,5 +71,9 @@ defmodule ChessTrainerWeb.BoardLiveComponent do
   def handle_event("square-click", %{"file" => file, "rank" => rank, "type" => "move"}, socket) do
     {:noreply,
      assign(socket, game: Game.move_piece_from_to_square(socket.assigns.game, file, rank))}
+  end
+
+  def handle_info({:game_lost}, socket) do
+    {:noreply, put_flash(socket, :error, "Game is lost")}
   end
 end
