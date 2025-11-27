@@ -5,11 +5,12 @@ defmodule ChessTrainerWeb.Chess.Game do
   alias ChessTrainerWeb.Chess.Endgame
 
   @type game_type :: :endgame
-  @type square :: {atom(), pos_integer()} | nil
+  @type square :: {atom(), pos_integer()}
   @type move :: {square, square}
-  @type orientation :: :white | :black | nil
+  @type orientation :: :white | :black
 
   @type t :: %__MODULE__{
+          player_color: orientation,
           board: map(),
           active_color: :white | :black,
           castling: list(),
@@ -30,6 +31,7 @@ defmodule ChessTrainerWeb.Chess.Game do
         }
 
   defstruct board: %{},
+            player_color: nil,
             active_color: nil,
             castling: [],
             en_passant: nil,
@@ -56,6 +58,7 @@ defmodule ChessTrainerWeb.Chess.Game do
       {:ok, %Chex.Game{} = chex_game} = Chex.Parser.FEN.parse(fen)
 
       game = %__MODULE__{
+        player_color: chex_game.active_color,
         board: chex_game.board,
         active_color: chex_game.active_color,
         castling: chex_game.castling,
@@ -103,23 +106,12 @@ defmodule ChessTrainerWeb.Chess.Game do
         end
 
       _ ->
-        case game.game_type do
-          :endgame ->
-            Endgame.check_move_against_tablebase(
-              game.tablebase,
-              move_to_uci(game.move_from_square, {file_atom, rank_integer})
-            )
-
-          _ ->
-            %{game | move_from_square: nil, move_to_square: nil}
-        end
-
-        # TODO load tablebase on position load
-        # TODO check move against move list
-        # TODO IF ENDGAME check tablebase, if ok move then use below code, if loss return loss
         case move(game, {game.move_from_square, {file_atom, rank_integer}}) do
-          {:ok, new_game} -> %{new_game | move_from_square: nil, move_to_square: nil}
-          {:error, _reason} -> %{game | move_from_square: nil, move_to_square: nil}
+          {:ok, new_game} ->
+            %{new_game | move_from_square: nil, move_to_square: nil}
+
+          {:error, _reason} ->
+            %{game | move_from_square: nil, move_to_square: nil}
         end
     end
   end
@@ -135,13 +127,23 @@ defmodule ChessTrainerWeb.Chess.Game do
       |> Map.delete(:move_to_square)
       |> Map.delete(:game_type)
       |> Map.delete(:fen)
+      |> Map.delete(:player_color)
+      |> Map.delete(:tablebase)
       |> then(&struct(Chex.Game, &1))
 
     case Chex.Game.move(chex_game, {from, to}) do
       {:ok, %Chex.Game{} = chex_game} ->
         fen = Chex.Parser.FEN.serialize_board(chex_game.board)
 
+        tablebase =
+          if game.game_type === :endgame do
+            Endgame.tablebase_from_fen(fen)
+          else
+            nil
+          end
+
         new_game = %__MODULE__{
+          player_color: game.player_color,
           board: chex_game.board,
           active_color: chex_game.active_color,
           castling: chex_game.castling,
@@ -158,13 +160,14 @@ defmodule ChessTrainerWeb.Chess.Game do
           move_to_square: nil,
           game_type: game.game_type,
           fen: fen,
-          tablebase:
-            if game.game_type === :endgame do
-              Endgame.tablebase_from_fen(fen)
-            else
-              nil
-            end
+          tablebase: tablebase
         }
+
+        tablebase_result = Endgame.check_fen_against_tablebase(new_game)
+        IO.inspect(tablebase_result)
+        # the result of tablebase checks could be :lost or :draw
+        # in which case return the new game position but pass :lost / :draw and stop game
+        # we will probably need a :continue in the below tuple
 
         {:ok, new_game}
 
@@ -192,10 +195,10 @@ defmodule ChessTrainerWeb.Chess.Game do
     end
   end
 
-  @spec move_to_uci(square, square) :: String.t()
-  defp move_to_uci(from, to) do
-    from = "#{elem(from, 0)}#{elem(from, 1)}"
-    to = "#{elem(to, 0)}#{elem(to, 1)}"
-    from <> to
-  end
+  # @spec move_to_uci(square, square) :: String.t()
+  # defp move_to_uci(from, to) do
+  #   from = "#{elem(from, 0)}#{elem(from, 1)}"
+  #   to = "#{elem(to, 0)}#{elem(to, 1)}"
+  #   from <> to
+  # end
 end
